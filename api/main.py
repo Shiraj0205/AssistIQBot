@@ -24,3 +24,8 @@ app.add_middleware(CORSMiddleware,
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+# To execute fast API
+# uvicorn api.main:app --reload
+# uvicorn api.main:app --host 0.0.0.0 --port 8083 --reload
+# uvicorn api.main:app --port 8083 --reload
