@@ -24,6 +24,15 @@ app.add_middleware(CORSMiddleware,
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/api/health")
+def health() -> Dict[str, str]:
+    """Api Health Endpoint
+
+    Returns:
+        Dict[str, str]: _description_
+    """
+    return { "status": "ok", "service": "AI Assist IQ Bot" }
+
 
 # To execute fast API
 # uvicorn api.main:app --reload
