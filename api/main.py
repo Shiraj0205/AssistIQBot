@@ -6,7 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from utils.document_helper import FastAPIFileAdapter, read_pdf_handler
+from data_ingestion.data_ingestion import ChatIngestor
 
+FAISS_BASE = os.getenv("FAISS_BASE", "faiss_index")
+UPLOAD_BASE = os.getenv("UPLOAD_BASE", "data")
+FAISS_INDEX_NAME = os.getenv("FAISS_INDEX_NAME", "index")
 
 app = FastAPI(title="Assist IQ Bot API", version="1.0")
 
@@ -35,9 +40,36 @@ def health() -> Dict[str, str]:
 
 
 @app.post("/admin/document/index")
-async def build_document_index() -> Any :
+async def build_document_index(
+    files: List[UploadFile] = File(...),
+    session_id: Optional[str] = Form(None),
+    use_session_dirs: bool = Form(True),
+    chunk_size: int = Form(1000),
+    chunk_overlap: int = Form(200),
+    k: int = Form(5),
+    ) -> Any:
     try:
-        return {"message": "Document indexing started."}
+         # Wrap Uploaded Files
+         wrapped = [FastAPIFileAdapter(f) for f in files]
+
+         # Initialize ChatIngestor
+         ci = ChatIngestor(
+              temp_base=UPLOAD_BASE,
+              faiss_base=FAISS_BASE,
+              use_session_dirs=use_session_dirs,
+              session_id=session_id or None
+            )
+         
+         # Save Uploaded Files
+         ci.built_retriver(
+             wrapped,
+             chunk_size=chunk_size,
+             chunk_overlap=chunk_overlap, 
+             k=k
+             )
+         
+         return {"session_id": ci.session_id, "k": k, "use_session_dirs": use_session_dirs}
+    
     except Exception as e:
         return JSONResponse(status_code=500, content={"Document indexing failed. ": str(e)})
 
