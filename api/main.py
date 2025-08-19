@@ -34,6 +34,22 @@ def health() -> Dict[str, str]:
     return { "status": "ok", "service": "AI Assist IQ Bot" }
 
 
+@app.post("/admin/document/index")
+async def build_document_index() -> Any :
+    try:
+        return {"message": "Document indexing started."}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"Document indexing failed. ": str(e)})
+
+
+@app.post("/chat/query")
+async def chat_query() -> Any :
+    try:
+        return {"message": "Chat query processed."}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"Chat query failed. ": str(e)})
+
+
 # To execute fast API
 # uvicorn api.main:app --reload
 # uvicorn api.main:app --host 0.0.0.0 --port 8083 --reload
