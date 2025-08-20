@@ -45,7 +45,7 @@ def health() -> Dict[str, str]:
 async def build_document_index(
     files: List[UploadFile] = File(...),
     session_id: Optional[str] = Form(None),
-    use_session_dirs: bool = Form(True),
+    use_session_dirs: bool = Form(False),
     chunk_size: int = Form(1000),
     chunk_overlap: int = Form(200),
     k: int = Form(5),
@@ -80,7 +80,7 @@ async def build_document_index(
 async def process_chat_query(
     question: str = Form(...),
     session_id: Optional[str] = Form(None),
-    use_session_dirs: bool = Form(True),
+    use_session_dirs: bool = Form(False),
     k: int = Form(5)
     ) -> Any :
     """Process User Chat Query
