@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
-from utils.document_helper import FastAPIFileAdapter, read_pdf_handler
+from utils.document_helper import FastAPIFileAdapter
 from src.ingestion.data_ingestor import ChatIngestor
+from src.data_retrieval.retrieval import ConversationalRAG
 
 FAISS_BASE = os.getenv("FAISS_BASE", "faiss_index")
 UPLOAD_BASE = os.getenv("UPLOAD_BASE", "data")
@@ -76,11 +77,55 @@ async def build_document_index(
 
 
 @app.post("/chat/query")
-async def chat_query() -> Any :
+async def process_chat_query(
+    question: str = Form(...),
+    session_id: Optional[str] = Form(None),
+    use_session_dirs: bool = Form(True),
+    k: int = Form(5)
+    ) -> Any :
+    """Process User Chat Query
+
+    Args:
+        question (str, optional): _description_. Defaults to Form(...).
+        session_id (Optional[str], optional): _description_. Defaults to Form(None).
+        use_session_dirs (bool, optional): _description_. Defaults to Form(True).
+        k (int, optional): _description_. Defaults to Form(5).
+
+    Raises:
+        HTTPException: _description_
+        HTTPException: _description_
+        HTTPException: _description_
+
+    Returns:
+        Any: _description_
+    """
     try:
-        return {"message": "Chat query processed."}
+        # Validate Inputs
+        if use_session_dirs and not session_id:
+            raise HTTPException(status_code=400,
+                                detail="session_id is required when use_session_dirs=True")
+
+        # Prepare FAISS Index Path
+        index_dir = os.path.join(FAISS_BASE, session_id) if use_session_dirs else FAISS_BASE  # type: ignore
+
+        # Check if FAISS Index Directory Exists
+        if not os.path.isdir(index_dir):
+            raise HTTPException(status_code=404, 
+                                detail=f"FAISS index not found at: {index_dir}")
+
+        # Initialize LCEL-style RAG pipeline
+        rag = ConversationalRAG(session_id=session_id)
+        rag.load_retriever_from_faiss(index_dir, k=k, index_name=FAISS_INDEX_NAME)  # build retriever + chain
+        response = rag.invoke(question, chat_history=[])
+
+        return {
+            "answer": response,
+            "session_id": session_id,
+            "k": k,
+            "engine": "LCEL-RAG"
+        }
     except Exception as e:
-        return JSONResponse(status_code=500, content={"Chat query failed. ": str(e)})
+        raise HTTPException(status_code=500, detail=f"Query failed: {e}") from e
 
 
 # To execute fast API
