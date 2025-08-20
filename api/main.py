@@ -41,7 +41,7 @@ def health() -> Dict[str, str]:
     return { "status": "ok", "service": "AI Assist IQ Bot" }
 
 
-@app.post("/admin/document/index")
+@app.post("/api/admin/document/index")
 async def build_document_index(
     files: List[UploadFile] = File(...),
     session_id: Optional[str] = Form(None),
@@ -76,7 +76,7 @@ async def build_document_index(
         return JSONResponse(status_code=500, content={"Document indexing failed. ": str(e)})
 
 
-@app.post("/chat/query")
+@app.post("/api/chat/query")
 async def process_chat_query(
     question: str = Form(...),
     session_id: Optional[str] = Form(None),
